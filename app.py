@@ -4,17 +4,30 @@ import time
 import datetime
 import threading
 import requests
+import os
+
+# --- YENİ ƏLAVƏ ---
+# (Əgər kodu lokalda yoxlayırsınızsa, .env faylını oxuması üçündür. 
+# Render-də isə onsuz da birbaşa sistemdən oxuyacaq)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 app = Flask(__name__)
 
 # === TƏNZİMLƏMƏLƏR ===
-ARBITRAGE_PERCENT = 0.5       
+ARBITRAGE_PERCENT = 1.0       
 MAX_ARBITRAGE_PERCENT = 100.0 
 MIN_VOLUME_USDT = 500000      
 MAX_FUNDING_RATE_PERCENT = 1.0   
 
-TELEGRAM_BOT_TOKEN = "8701129404:AAFYMzGvlAnGZ_wNQiCWciS3W3Mp-KP7_K4"
-TELEGRAM_CHAT_ID = "5490094790"
+# --- TOKENLƏRİ GİZLƏDİRİK ---
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
+
+# ... Kodun qalan hissəsi eyni qalır ...
 
 live_arbitrage_data = []
 
@@ -169,4 +182,5 @@ threading.Thread(target=send_startup_message, daemon=True).start()
 threading.Thread(target=run_scanner, daemon=True).start()
 
 if __name__ == '__main__':
+
     app.run(debug=True, host='0.0.0.0', port=5000)
