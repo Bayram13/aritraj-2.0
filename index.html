@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="az" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Arbitrage Pro Web</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Birja rəng palitrası */
+            --bg-dark: #0b0e11;
+            --bg-panel: #181a20;
+            --bg-hover: #2b3139;
+            --text-primary: #eaecef;
+            --text-muted: #848e9c;
+            --border-color: #2b3139;
+            --color-buy: #0ecb81;
+            --color-sell: #f6465d;
+            --color-highlight: #fcd535;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-dark); 
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Rəqəmlər üçün Monospace şrifti */
+        .price-font { font-family: 'Roboto Mono', monospace; }
+        
+        .app-container { max-width: 1400px; margin: 0 auto; padding: 2rem 1rem; }
+        
+        /* Başlıq və Alətlər paneli */
+        .header-action { border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem; }
+        .logo-text { color: var(--color-highlight); font-weight: 600; letter-spacing: 0.5px; }
+        
+        .controls-panel { 
+            display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;
+        }
+        
+        .form-control, .form-select { 
+            background-color: var(--bg-panel); 
+            border: 1px solid var(--border-color); 
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            border-radius: 4px;
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: var(--bg-panel);
+            border-color: var(--color-highlight);
+            color: var(--text-primary);
+            box-shadow: none;
+        }
+
+        /* Cədvəl Dizaynı */
+        .card-custom { 
+            background-color: var(--bg-panel); 
+            border-radius: 8px; 
+            border: 1px solid var(--border-color);
+        }
+        
+        .table { margin-bottom: 0; color: var(--text-primary); }
+        .table th { 
+            color: var(--text-muted); 
+            font-weight: 500; 
+            font-size: 0.8rem; 
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 16px;
+        }
+        .table td { 
+            border-bottom: 1px solid var(--border-color); 
+            padding: 14px 16px; 
+            vertical-align: middle;
+        }
+        .table tbody tr:hover { background-color: var(--bg-hover); }
+
+        /* Mətn Rəngləri və Linklər */
+        .text-buy { color: var(--color-buy) !important; }
+        .text-sell { color: var(--color-sell) !important; }
+        .text-muted-custom { color: var(--text-muted); font-size: 0.8rem;}
+        
+        a.exchange-link { text-decoration: none; font-weight: 500; color: var(--text-primary); }
+        a.exchange-link:hover { color: var(--color-highlight); }
+        
+        .token-name { font-weight: 600; font-size: 1.1rem; }
+        .net-diff { color: var(--color-highlight); font-weight: 700; font-size: 1.1rem; }
+
+        /* Gündüz Modu (Light Theme) Tənzimləmələri */
+        [data-bs-theme="light"] {
+            --bg-dark: #fafafa;
+            --bg-panel: #ffffff;
+            --bg-hover: #f5f5f5;
+            --text-primary: #1e2329;
+            --text-muted: #707a8a;
+            --border-color: #e2e8f0;
+            --color-highlight: #c99400;
+        }
+    </style>
+    <script>
+        let allData = []; 
+
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+            document.getElementById('theme-icon').innerHTML = savedTheme === 'dark' ? '☀️ Gündüz' : '🌙 Gecə';
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-bs-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            document.getElementById('theme-icon').innerHTML = newTheme === 'dark' ? '☀️ Gündüz' : '🌙 Gecə';
+        }
+
+        async function fetchData() {
+            try {
+                const response = await fetch('/api/data');
+                allData = await response.json();
+                renderTable(); 
+            } catch (error) {
+                console.error('Data xətası:', error);
+            }
+        }
+
+        function renderTable() {
+            const filterValue = document.getElementById('exchangeFilter').value;
+            const sortValue = document.getElementById('sortFilter').value;
+            const searchValue = document.getElementById('searchInput').value.toLowerCase();
+            
+            let processedData = [...allData];
+            
+            if (searchValue) {
+                processedData = processedData.filter(row => row.token.toLowerCase().includes(searchValue));
+            }
+
+            if (filterValue !== "ALL") {
+                processedData = processedData.filter(row => row.buy_ex === filterValue || row.sell_ex === filterValue);
+            }
+
+            processedData.sort((a, b) => {
+                if (sortValue === "profit_desc") return b.net_diff - a.net_diff;
+                if (sortValue === "profit_asc") return a.net_diff - b.net_diff;
+                if (sortValue === "time_desc") return b.time.localeCompare(a.time);
+                if (sortValue === "token_az") return a.token.localeCompare(b.token);
+                return 0;
+            });
+
+            let tableHTML = "";
+            if(processedData.length === 0) {
+                tableHTML = `<tr><td colspan="7" class="text-center text-muted py-5">Axtarışa uyğun məlumat tapılmadı</td></tr>`;
+            } else {
+                processedData.forEach(row => {
+                    tableHTML += `
+                        <tr>
+                            <td>
+                                <span class="token-name">${row.token.split('/')[0]}</span><span class="text-muted-custom">/USDT</span>
+                            </td>
+                            <td>
+                                <a href="${row.buy_url}" target="_blank" class="exchange-link">${row.buy_ex}</a> 
+                                <br><span class="price-font text-buy">${row.buy_p.toFixed(5)}</span>
+                            </td>
+                            <td>
+                                <a href="${row.sell_url}" target="_blank" class="exchange-link">${row.sell_ex}</a> 
+                                <br><span class="price-font text-sell">${row.sell_p.toFixed(5)}</span>
+                            </td>
+                            <td class="price-font text-muted-custom">
+                                Long: ${row.fr_buy.toFixed(4)}%<br>
+                                Short: ${row.fr_sell.toFixed(4)}%
+                            </td>
+                            <td class="text-end">
+                                <span class="price-font net-diff">+${row.net_diff.toFixed(2)}%</span>
+                                <br><span class="price-font text-muted-custom">Brüt: ${row.raw_diff.toFixed(2)}%</span>
+                            </td>
+                            <td class="price-font text-end">${row.tp_price.toFixed(5)}</td>
+                            <td class="price-font text-end text-muted-custom">${row.time}</td>
+                        </tr>
+                    `;
+                });
+            }
+            document.getElementById('arb-table-body').innerHTML = tableHTML;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            fetchData();
+            setInterval(fetchData, 3000);
+            
+            document.getElementById('exchangeFilter').addEventListener('change', renderTable);
+            document.getElementById('sortFilter').addEventListener('change', renderTable);
+            document.getElementById('searchInput').addEventListener('input', renderTable);
+        });
+    </script>
+</head>
+<body>
+    <div class="app-container">
+        
+        <div class="header-action d-flex justify-content-between align-items-center">
+            <h3 class="m-0 logo-text">⚡ Arbitrage Terminal</h3>
+            <button class="btn btn-sm btn-outline-secondary" onclick="toggleTheme()" id="theme-icon">
+                ☀️ Gündüz
+            </button>
+        </div>
+
+        <div class="controls-panel">
+            <input type="text" id="searchInput" class="form-control" style="max-width: 250px;" placeholder="Token axtar (məs: BTC)...">
+            
+            <select id="exchangeFilter" class="form-select" style="max-width: 200px;">
+                <option value="ALL">🌐 Bütün Birjalar</option>
+                <option value="Binance">Binance</option>
+                <option value="Bybit">Bybit</option>
+                <option value="MEXC">MEXC</option>
+                <option value="KuCoin">KuCoin</option>
+                <option value="GateIO">GateIO</option>
+                <option value="Bitget">Bitget</option>
+                <option value="HTX">HTX</option>
+            </select>
+
+            <select id="sortFilter" class="form-select" style="max-width: 220px;">
+                <option value="profit_desc">📈 Xalis Qazanca Görə (Çoxdan-Aza)</option>
+                <option value="profit_asc">📉 Xalis Qazanca Görə (Azdan-Çoxa)</option>
+                <option value="time_desc">⏱️ Ən Yeni Siqnallar</option>
+                <option value="token_az">🔤 Token (A-Z)</option>
+            </select>
+        </div>
+
+        <div class="card-custom">
+            <div class="table-responsive">
+                <table class="table table-borderless text-nowrap">
+                    <thead>
+                        <tr>
+                            <th>Cütlük</th>
+                            <th>Alış (Birja/Qiymət)</th>
+                            <th>Satış (Birja/Qiymət)</th>
+                            <th>Funding (Maliyyələşdirmə)</th>
+                            <th class="text-end">Fərq (Net/Brüt)</th>
+                            <th class="text-end">Hədəf (TP)</th>
+                            <th class="text-end">Vaxt</th>
+                        </tr>
+                    </thead>
+                    <tbody id="arb-table-body">
+                        <tr><td colspan="7" class="py-5 text-center text-muted">Bazar skan edilir...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>
