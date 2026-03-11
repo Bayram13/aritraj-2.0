@@ -18,10 +18,10 @@ except ImportError:
 app = Flask(__name__)
 
 # === TƏNZİMLƏMƏLƏR ===
-ARBITRAGE_PERCENT = 0.5       
+ARBITRAGE_PERCENT = 0.1       
 MAX_ARBITRAGE_PERCENT = 100.0 
-MIN_VOLUME_USDT = 500000      
-MAX_FUNDING_RATE_PERCENT = 1.0   
+MIN_VOLUME_USDT = 50      
+MAX_FUNDING_RATE_PERCENT = 10.0   
 
 # --- TOKENLƏRİ GİZLƏDİRİK ---
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
@@ -184,4 +184,5 @@ threading.Thread(target=run_scanner, daemon=True).start()
 if __name__ == '__main__':
 
     app.run(debug=True, host='0.0.0.0', port=5000)
+
 
