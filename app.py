@@ -18,7 +18,7 @@ except ImportError:
 app = Flask(__name__)
 
 # === TƏNZİMLƏMƏLƏR ===
-ARBITRAGE_PERCENT = 1.0       
+ARBITRAGE_PERCENT = 0.5       
 MAX_ARBITRAGE_PERCENT = 100.0 
 MIN_VOLUME_USDT = 500000      
 MAX_FUNDING_RATE_PERCENT = 1.0   
@@ -184,3 +184,4 @@ threading.Thread(target=run_scanner, daemon=True).start()
 if __name__ == '__main__':
 
     app.run(debug=True, host='0.0.0.0', port=5000)
+
